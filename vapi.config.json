@@ -1,0 +1,18 @@
+{
+  "organization": "gb-salesmachine",
+  "project": "lead-outreach",
+  "defaultAssistant": {
+    "name": "Sales Assistant",
+    "voice": {
+      "provider": "elevenlabs",
+      "voiceId": "21m00Tcm4TlvDq8ikWAM"
+    },
+    "model": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "temperature": 0.7
+    },
+    "firstMessage": "Hi, this is Sarah from GB Agency. I noticed your business online and wanted to reach out about how we might be able to help you grow. Do you have a moment to chat?",
+    "systemPrompt": "You are a friendly sales assistant for GB Agency. Your goal is to qualify leads and schedule meetings. Be conversational, professional, and respectful of their time."
+  }
+}

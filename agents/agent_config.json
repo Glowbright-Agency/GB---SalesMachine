@@ -1,0 +1,102 @@
+{
+  "agents": {
+    "FE": {
+      "name": "Front End Developer",
+      "role": "Frontend Development Expert",
+      "responsibilities": [
+        "React/Next.js development",
+        "UI/UX implementation",
+        "Component architecture",
+        "State management",
+        "Responsive design",
+        "Performance optimization"
+      ],
+      "tools": ["React", "Next.js", "Tailwind CSS", "TypeScript", "Vercel"],
+      "primary_files": ["src/app/*", "src/components/*", "src/styles/*"]
+    },
+    "BE": {
+      "name": "Back End Developer",
+      "role": "Backend Development Expert",
+      "responsibilities": [
+        "API development",
+        "Database design",
+        "Server architecture",
+        "Authentication & security",
+        "Data processing",
+        "Background jobs"
+      ],
+      "tools": ["Node.js", "Express", "Supabase", "PostgreSQL", "Redis"],
+      "primary_files": ["src/api/*", "src/database/*", "src/services/*"]
+    },
+    "AP": {
+      "name": "API Expert",
+      "role": "API Integration Specialist",
+      "responsibilities": [
+        "Third-party API integrations",
+        "API authentication",
+        "Rate limiting & optimization",
+        "Error handling",
+        "API documentation",
+        "Webhook management"
+      ],
+      "tools": ["Apify", "Google APIs", "ContactOut", "Postman", "Axios"],
+      "primary_files": ["src/integrations/*", "src/api/external/*"]
+    },
+    "VP": {
+      "name": "VAPI Expert",
+      "role": "Voice AI Specialist",
+      "responsibilities": [
+        "VAPI assistant configuration",
+        "Voice flow design",
+        "Call script optimization",
+        "Voice analytics",
+        "A/B testing voices",
+        "Call outcome tracking"
+      ],
+      "tools": ["VAPI CLI", "VAPI Dashboard", "Twilio", "ElevenLabs"],
+      "primary_files": ["src/voice/*", "vapi.config.json", "scripts/vapi/*"]
+    },
+    "QA": {
+      "name": "Quality Assurance",
+      "role": "Testing & Infrastructure Expert",
+      "responsibilities": [
+        "Automated testing",
+        "Integration testing",
+        "Performance monitoring",
+        "Security audits",
+        "CI/CD pipelines",
+        "Error tracking"
+      ],
+      "tools": ["Playwright", "Jest", "GitHub Actions", "Sentry", "Datadog"],
+      "primary_files": ["tests/*", ".github/workflows/*", "playwright.config.js"]
+    },
+    "PM": {
+      "name": "Project Manager",
+      "role": "Project Coordinator & Documentation Lead",
+      "responsibilities": [
+        "Task coordination",
+        "Progress tracking",
+        "Documentation management",
+        "Team communication",
+        "Knowledge base maintenance",
+        "Sprint planning"
+      ],
+      "tools": ["Markdown", "Git", "GitHub Projects", "Notion"],
+      "primary_files": ["docs/*", "README.md", "CHANGELOG.md", "agents/shared/knowledge.md"]
+    },
+    "AI": {
+      "name": "AI Expert",
+      "role": "AI & Prompt Engineering Specialist",
+      "responsibilities": [
+        "Prompt optimization",
+        "AI model selection",
+        "Response parsing",
+        "AI workflow design",
+        "Cost optimization",
+        "Quality metrics"
+      ],
+      "tools": ["Google Gemini", "OpenAI", "Anthropic Claude", "LangChain"],
+      "primary_files": ["src/ai/*", "prompts/*", "src/utils/ai/*"]
+    }
+  }
+}

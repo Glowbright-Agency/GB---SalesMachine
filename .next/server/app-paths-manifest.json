@@ -1,0 +1,6 @@
+{
+  "/api/campaigns/route": "app/api/campaigns/route.js",
+  "/(dashboard)/scrape-leads/page": "app/(dashboard)/scrape-leads/page.js",
+  "/(dashboard)/billing/page": "app/(dashboard)/billing/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+}
