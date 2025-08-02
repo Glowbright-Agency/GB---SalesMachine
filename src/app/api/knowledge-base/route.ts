@@ -24,10 +24,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No business knowledge base found' }, { status: 404 })
     }
 
+    // Create comprehensive knowledge base from both website analysis AND discovery answers
+    const comprehensiveKnowledgeBase = {
+      // Website Analysis Data
+      ...(business.analysis_data || {}),
+      
+      // Discovery Questions & Answers (the 7 critical questions)
+      discoveryAnswers: business.discovery_answers || {},
+      
+      // Additional business metadata
+      businessMetadata: {
+        businessId: business.id,
+        userId: business.user_id,
+        websiteUrl: business.website_url,
+        createdAt: business.created_at,
+        updatedAt: business.updated_at,
+        isActive: business.is_active
+      }
+    }
+
     return NextResponse.json({ 
       success: true,
       business: business,
-      knowledgeBase: business.analysis_data 
+      knowledgeBase: comprehensiveKnowledgeBase 
     })
 
   } catch (error) {

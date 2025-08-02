@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface SalesTarget {
@@ -24,6 +24,9 @@ export default function ScrapeLeadsPage() {
   const [location, setLocation] = useState('')
   const [quantity, setQuantity] = useState(50)
   const [scrapedLeads, setScrapedLeads] = useState<any[]>([])
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+  const [businessContext, setBusinessContext] = useState<any>(null)
 
   // Location suggestions
   const locationSuggestions: LocationSuggestion[] = [
@@ -49,10 +52,97 @@ export default function ScrapeLeadsPage() {
     { city: 'Nashville', state: 'TN', displayName: 'Nashville, TN' }
   ]
 
+  // Load business context and AI suggestions on page load
+  useEffect(() => {
+    loadBusinessContextAndSuggestions()
+  }, [])
+
   const addSalesTarget = () => {
+    if (salesTargets.length >= 3) {
+      alert('Maximum 3 sales targets allowed')
+      return
+    }
     const newTarget: SalesTarget = {
       id: Date.now().toString(),
       name: ''
+    }
+    setSalesTargets([...salesTargets, newTarget])
+  }
+
+  // Load business context and generate AI suggestions on page load
+  const loadBusinessContextAndSuggestions = async () => {
+    try {
+      // Get business knowledge base from Supabase
+      const response = await fetch('/api/knowledge-base')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.business && data.knowledgeBase) {
+          setBusinessContext(data.knowledgeBase)
+          // Auto-generate AI suggestions based on business context
+          await generateAISuggestions(data.knowledgeBase)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading business context:', error)
+    }
+  }
+
+  const generateAISuggestions = async (knowledgeBase = businessContext) => {
+    setIsGeneratingAI(true)
+    try {
+      const response = await fetch('/api/ai-suggest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'sales_targets',
+          location: location,
+          businessContext: knowledgeBase, // Pass the business knowledge base
+          context: 'business lead scraping based on business analysis'
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAiSuggestions(data.suggestions || [])
+        
+        // AI-FIRST: Pre-fill the first 3 suggestions automatically
+        if (data.suggestions && data.suggestions.length > 0 && salesTargets.length === 0) {
+          const prefilledTargets = data.suggestions.slice(0, 3).map((suggestion: string, index: number) => ({
+            id: `prefilled-${index}`,
+            name: suggestion
+          }))
+          setSalesTargets(prefilledTargets)
+        }
+      }
+    } catch (error) {
+      console.error('Error generating AI suggestions:', error)
+      // Fallback suggestions based on business context if available
+      const fallbackSuggestions = knowledgeBase?.targetCustomers?.map((customer: any) => 
+        customer.type || customer.description
+      ).filter(Boolean).slice(0, 6) || [
+        'Restaurants',
+        'Law Firms', 
+        'Medical Clinics',
+        'Real Estate Agencies',
+        'Dental Practices',
+        'Auto Repair Shops'
+      ]
+      setAiSuggestions(fallbackSuggestions)
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
+  const useSuggestion = (suggestion: string) => {
+    if (salesTargets.length >= 3) {
+      alert('Maximum 3 sales targets allowed')
+      return
+    }
+    const newTarget: SalesTarget = {
+      id: Date.now().toString(),
+      name: suggestion
     }
     setSalesTargets([...salesTargets, newTarget])
   }
@@ -89,29 +179,54 @@ export default function ScrapeLeadsPage() {
 
   const startScraping = async () => {
     setIsLoading(true)
+    setScrapedLeads([])
+    
     try {
-      const response = await fetch('/api/scrape-business-leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          salesTargets: salesTargets.map(t => t.name),
-          location,
-          quantity
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to scrape leads')
+      const validTargets = salesTargets.filter(t => t.name.trim()).map(t => t.name.trim())
+      
+      if (validTargets.length === 0) {
+        alert('Please add at least one sales target')
+        return
       }
 
-      const data = await response.json()
-      setScrapedLeads(data.leads || [])
+      // Process each target in stages
+      let allLeads: any[] = []
+      const leadsPerTarget = Math.ceil(quantity / validTargets.length)
+      
+      for (let i = 0; i < validTargets.length; i++) {
+        const target = validTargets[i]
+        console.log(`Processing target ${i + 1}/${validTargets.length}: ${target}`)
+        
+        const response = await fetch('/api/scrape-business-leads', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            salesTargets: [target], // Single target per request
+            location,
+            quantity: leadsPerTarget,
+            stage: i + 1,
+            totalStages: validTargets.length
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to scrape leads')
+        }
+
+        const data = await response.json()
+        if (data.leads && data.leads.length > 0) {
+          allLeads = [...allLeads, ...data.leads]
+          setScrapedLeads(allLeads) // Update progress
+        }
+      }
+
       setStep(4) // Results step
     } catch (error) {
       console.error('Error scraping leads:', error)
-      alert('Failed to scrape leads. Please try again.')
+      alert(`Failed to scrape leads: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
@@ -127,31 +242,32 @@ export default function ScrapeLeadsPage() {
               <p className="text-gray-600">Choose the city where you want to scrape business leads</p>
             </div>
 
-            <div className="space-y-3">
-              {locationSuggestions.map((loc) => (
-                <button
-                  key={loc.displayName}
-                  onClick={() => setLocation(loc.displayName)}
-                  className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
-                    location === loc.displayName
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div className="font-medium text-gray-900">{loc.displayName}</div>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6">
+            <div className="mb-6">
               <input
                 type="text"
-                placeholder="Or type a custom location (e.g., Miami, FL)"
+                placeholder="Type a location (e.g., Miami, FL)"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none"
+                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none text-lg"
               />
             </div>
+
+            {!location && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500 mb-3">Or choose from popular cities:</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {locationSuggestions.slice(0, 12).map((loc) => (
+                    <button
+                      key={loc.displayName}
+                      onClick={() => setLocation(loc.displayName)}
+                      className="p-3 text-left rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                    >
+                      <div className="text-sm font-medium text-gray-900">{loc.displayName}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )
 
@@ -160,35 +276,114 @@ export default function ScrapeLeadsPage() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Sales Targets</h2>
-              <p className="text-gray-600">What types of businesses do you want to target?</p>
+              <p className="text-gray-600">What types of businesses do you want to target? (Max 3)</p>
+            </div>
+
+            {/* Business Context Display */}
+            {businessContext && (
+              <div className="bg-green-50 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-green-600">🧠</span>
+                  <h3 className="font-semibold text-green-800">Complete Knowledge Base Active</h3>
+                </div>
+                <p className="text-sm text-green-700 mb-2">
+                  <strong>{businessContext.businessName}</strong> 
+                  {businessContext.industry && ` (${businessContext.industry})`}
+                </p>
+                <div className="grid grid-cols-2 gap-4 text-xs text-green-600">
+                  <div>
+                    <span className="font-medium">📊 Website Analysis:</span> 
+                    {businessContext.valueProposition ? ' ✓' : ' ⏳'}
+                  </div>
+                  <div>
+                    <span className="font-medium">💬 Discovery Questions:</span> 
+                    {businessContext.discoveryAnswers?.target_audience ? ' ✓' : ' ⏳'}
+                  </div>
+                </div>
+                {businessContext.discoveryAnswers?.target_audience && (
+                  <p className="text-xs text-green-600 mt-2">
+                    <strong>Target:</strong> {businessContext.discoveryAnswers.target_audience}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* AI-Generated Suggestions */}
+            <div className="bg-purple-50 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">🤖 Gemini 2.5 Suggestions</h3>
+                <button
+                  onClick={() => generateAISuggestions()}
+                  disabled={isGeneratingAI}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    isGeneratingAI
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+                >
+                  {isGeneratingAI ? 'Regenerating...' : 'Regenerate AI'}
+                </button>
+              </div>
+              
+              <p className="text-sm text-purple-700 mb-4">
+                Based on your business analysis, these are ideal prospects who need your services:
+              </p>
+              
+              {aiSuggestions.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {aiSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => useSuggestion(suggestion)}
+                      disabled={salesTargets.length >= 3}
+                      className={`p-2 text-sm rounded-lg border transition-all ${
+                        salesTargets.length >= 3
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'border-purple-200 text-purple-700 hover:bg-purple-100'
+                      }`}
+                    >
+                      + {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
-              {salesTargets.map((target) => (
-                <div key={target.id} className="flex gap-3">
-                  <input
-                    type="text"
-                    placeholder="e.g., Restaurants, Law Firms, Medical Clinics"
-                    value={target.name}
-                    onChange={(e) => updateSalesTarget(target.id, e.target.value)}
-                    className="flex-1 p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none"
-                  />
-                  <button
-                    onClick={() => removeSalesTarget(target.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all"
-                  >
-                    Remove
-                  </button>
+              {salesTargets.map((target, index) => (
+                <div key={target.id} className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                      Target {index + 1}
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="e.g., Restaurants, Law Firms, Medical Clinics"
+                      value={target.name}
+                      onChange={(e) => updateSalesTarget(target.id, e.target.value)}
+                      className="flex-1 p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => removeSalesTarget(target.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <button
-              onClick={addSalesTarget}
-              className="w-full p-4 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 font-medium hover:border-purple-600 hover:bg-purple-50 transition-all"
-            >
-              + Add Sales Target
-            </button>
+            {salesTargets.length < 3 && (
+              <button
+                onClick={addSalesTarget}
+                className="w-full p-4 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 font-medium hover:border-purple-600 hover:bg-purple-50 transition-all"
+              >
+                + Add Sales Target ({salesTargets.length}/3)
+              </button>
+            )}
           </div>
         )
 
@@ -367,7 +562,9 @@ export default function ScrapeLeadsPage() {
                       : 'bg-purple-600 text-white hover:bg-purple-700'
                   }`}
                 >
-                  {isLoading ? 'Scraping...' : step === 3 ? 'Start Scraping' : 'Continue'}
+                  {isLoading 
+                    ? `Scraping... (${scrapedLeads.length} leads found)` 
+                    : step === 3 ? 'Start Scraping' : 'Continue'}
                 </button>
               </div>
             )}
