@@ -71,6 +71,16 @@ export default function DashboardLayout({
                 Scrape Leads
               </Link>
               <Link 
+                href="/business-profile" 
+                className={`text-sm font-medium ${
+                  pathname === '/business-profile' 
+                    ? 'text-gray-900 border-b-2 border-gray-900 pb-1' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Business Profile
+              </Link>
+              <Link 
                 href="/billing" 
                 className={`text-sm font-medium ${
                   pathname === '/billing' 

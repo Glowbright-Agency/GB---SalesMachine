@@ -103,3 +103,108 @@ export async function PUT(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { 
+      businessId, 
+      businessName, 
+      description, 
+      valueProposition, 
+      industry,
+      websiteUrl,
+      discoveryAnswers,
+      analysisData 
+    } = body
+
+    // Get current business first (use first business if businessId not provided)
+    let business
+    if (businessId) {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', businessId)
+        .eq('user_id', user.id)
+        .single()
+      
+      if (error || !data) {
+        return NextResponse.json({ error: 'Business not found' }, { status: 404 })
+      }
+      business = data
+    } else {
+      // Get user's first business
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (error || !data) {
+        return NextResponse.json({ error: 'No business found' }, { status: 404 })
+      }
+      business = data
+    }
+
+    // Build update object with only provided fields
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    // Update basic business fields
+    if (businessName !== undefined) updateData.business_name = businessName
+    if (description !== undefined) updateData.description = description
+    if (valueProposition !== undefined) updateData.value_proposition = valueProposition
+    if (industry !== undefined) updateData.industry = industry
+    if (websiteUrl !== undefined) updateData.website_url = websiteUrl
+
+    // Update discovery answers (merge with existing)
+    if (discoveryAnswers !== undefined) {
+      updateData.discovery_answers = {
+        ...(business.discovery_answers || {}),
+        ...discoveryAnswers
+      }
+    }
+
+    // Update analysis data (merge with existing)
+    if (analysisData !== undefined) {
+      updateData.analysis_data = {
+        ...(business.analysis_data || {}),
+        ...analysisData
+      }
+    }
+
+    const { data: updatedBusiness, error } = await supabase
+      .from('businesses')
+      .update(updateData)
+      .eq('id', business.id)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating business:', error)
+      return NextResponse.json({ error: 'Failed to update business' }, { status: 500 })
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      business: updatedBusiness
+    })
+
+  } catch (error) {
+    console.error('Error in PATCH knowledge base:', error)
+    return NextResponse.json({ 
+      error: 'Failed to update business knowledge base' 
+    }, { status: 500 })
+  }
+}

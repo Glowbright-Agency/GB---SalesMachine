@@ -48,6 +48,13 @@ const COOKIE_KEYS = {
   SESSION_ID: 'gb_session_id'
 } as const
 
+// Legacy localStorage keys for backwards compatibility
+const STORAGE_KEYS = {
+  BUSINESS_ANALYSIS: 'businessAnalysis',
+  DISCOVERY_ANSWERS: 'discoveryAnswers',
+  BUSINESS_ID: 'businessId'
+} as const
+
 // Cookie options
 const COOKIE_OPTIONS = {
   maxAge: 24 * 60 * 60 * 1000, // 24 hours

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { KnowledgeBaseStorage } from '@/lib/knowledge-base-storage'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,61 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const migrateKnowledgeBaseToDatabase = async (userId: string) => {
+    try {
+      // Check if there's session knowledge base to migrate
+      const sessionKB = KnowledgeBaseStorage.loadSession()
+      if (!sessionKB || !sessionKB.isTemporary) {
+        console.log('No session knowledge base found to migrate')
+        return
+      }
+
+      console.log('🔄 Migrating session knowledge base to database...')
+
+      // Prepare business data for database
+      const businessData = {
+        user_id: userId,
+        website_url: sessionKB.websiteUrl || '',
+        business_name: sessionKB.businessName,
+        description: sessionKB.description || '',
+        value_proposition: sessionKB.valueProposition || '',
+        industry: sessionKB.industry || '',
+        target_markets: sessionKB.targetMarkets || [],
+        decision_maker_roles: sessionKB.targetDecisionMakers || [],
+        analysis_data: {
+          ...sessionKB,
+          businessName: sessionKB.businessName,
+          industry: sessionKB.industry,
+          description: sessionKB.description,
+          valueProposition: sessionKB.valueProposition,
+          competitiveAdvantage: sessionKB.competitiveAdvantage,
+          targetCustomers: sessionKB.targetCustomers || [],
+          targetDecisionMakers: sessionKB.targetDecisionMakers || []
+        },
+        discovery_answers: sessionKB.discoveryAnswers || {}
+      }
+
+      // Insert business profile into database
+      const { error: businessError } = await supabase
+        .from('businesses')
+        .insert(businessData)
+
+      if (businessError) {
+        console.error('Failed to migrate business data:', businessError)
+        // Don't throw error - let user continue to dashboard
+        return
+      }
+
+      // Clear session storage after successful migration
+      KnowledgeBaseStorage.clearSession()
+      console.log('✅ Knowledge base successfully migrated to database and session cleared')
+
+    } catch (error) {
+      console.error('Knowledge base migration error:', error)
+      // Don't throw error - let user continue to dashboard
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -61,6 +117,9 @@ export default function RegisterPage() {
         if (profileError) {
           console.error('Profile creation error:', profileError)
         }
+
+        // Migrate knowledge base from session storage to Supabase
+        await migrateKnowledgeBaseToDatabase(authData.user.id)
 
         router.push('/dashboard')
         router.refresh()
