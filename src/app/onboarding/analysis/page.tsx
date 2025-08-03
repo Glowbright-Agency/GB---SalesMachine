@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 export default function AnalysisResultsPage() {
   const router = useRouter()
@@ -39,10 +40,10 @@ export default function AnalysisResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Analyzing your website...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white opacity-70">Analyzing your website...</p>
         </div>
       </div>
     )
@@ -50,12 +51,12 @@ export default function AnalysisResultsPage() {
 
   if (!businessAnalysis) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">No analysis data found</p>
+          <p className="text-red-400 mb-4">No analysis data found</p>
           <button
             onClick={() => router.push('/onboarding')}
-            className="bg-gray-900 text-white px-6 py-2 rounded-full"
+            className="bg-white text-black px-6 py-2 rounded-full hover:bg-gray-200 transition-all"
           >
             Start Over
           </button>
@@ -65,27 +66,27 @@ export default function AnalysisResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Header with Logo and Navigation */}
-      <header className="bg-white px-8 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-black px-8 py-6">
+        <div className="w-[96vw] mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <Link href="/onboarding" className="flex items-center gap-3 cursor-pointer">
             <img src="/logo.svg" alt="Sales Machine" className="h-8 w-auto" />
-          </div>
+          </Link>
           
-          {/* Navigation Steps */}
+          {/* Navigation Steps - Centered */}
           <nav className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">✓</span>
-              <span className="text-sm font-medium text-green-600">Website Analysis</span>
+              <span className="text-sm font-medium text-green-400">Website Analysis</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-gray-300 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
+              <span className="bg-gray-600 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
               <span className="text-sm font-medium text-gray-400">Sales Targets</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-gray-300 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
+              <span className="bg-gray-600 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
               <span className="text-sm font-medium text-gray-400">Sign Up</span>
             </div>
           </nav>
@@ -93,7 +94,7 @@ export default function AnalysisResultsPage() {
           {/* Don't Have Website Link */}
           <button
             onClick={() => router.push('/manual-setup')}
-            className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+            className="text-gray-300 hover:text-white text-sm font-medium"
           >
             Don't Have A Website?
           </button>
@@ -102,15 +103,15 @@ export default function AnalysisResultsPage() {
 
       {/* Main Analysis Results */}
       <main className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <div className="rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center" style={{ backgroundColor: '#ceb3fc' }}>
           <div className="max-w-4xl w-full text-center px-8">
-            <h1 className="text-3xl md:text-4xl font-medium text-gray-800 mb-8 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-medium text-black mb-8 leading-tight">
               Website Analysis Complete
             </h1>
             
             {/* Analysis Results Card */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 mb-8 text-left">
-              <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+            <div className="border border-black rounded-2xl p-8 mb-8 text-left">
+              <div className="space-y-4 text-lg text-black leading-relaxed">
                 <p>
                   <strong>{businessAnalysis.businessName || 'This company'}</strong> is a {businessAnalysis.industry?.toLowerCase() || 'business'} that provides {businessAnalysis.description || 'products and services'} to {
                     businessAnalysis.targetMarkets && businessAnalysis.targetMarkets.length > 0 
@@ -139,20 +140,20 @@ export default function AnalysisResultsPage() {
             <div className="flex items-center justify-center gap-6">
               <button
                 onClick={handleEditAnalysis}
-                className="bg-gray-100 text-gray-700 px-8 py-3 rounded-full font-medium hover:bg-gray-200 transition-all"
+                className="bg-white/50 text-black px-8 py-3 rounded-full font-medium hover:bg-white/70 transition-all"
               >
                 Re-analyze Website
               </button>
               
               <button
                 onClick={handleContinue}
-                className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition-all"
+                className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-black/80 transition-all"
               >
                 Continue to Sales Targets →
               </button>
             </div>
 
-            <p className="text-gray-600 text-sm mt-4">
+            <p className="text-black opacity-70 text-sm mt-4">
               Review the analysis above. If it looks accurate, continue to define your sales targets.
             </p>
           </div>

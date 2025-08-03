@@ -180,8 +180,8 @@ export default function CampaignDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading campaign...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-black">Loading campaign...</p>
         </div>
       </div>
     )
@@ -191,8 +191,8 @@ export default function CampaignDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Campaign not found</p>
-          <Link href="/dashboard" className="text-indigo-600 hover:text-indigo-800 mt-4 inline-block">
+          <p className="text-black">Campaign not found</p>
+          <Link href="/dashboard" className="text-black hover:text-gray-700 mt-4 inline-block">
             Back to Dashboard
           </Link>
         </div>
@@ -203,65 +203,63 @@ export default function CampaignDetailPage() {
   const filteredLeads = getFilteredLeads()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen p-6">
+      <div className="rounded-3xl p-8" style={{ backgroundColor: '#b3cefc' }}>
+        {/* Header */}
+        <header className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-800 text-sm">
+              <Link href="/dashboard" className="text-black hover:text-gray-700 text-sm">
                 ← Back to Dashboard
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 mt-1">{campaign.name}</h1>
-              <p className="text-gray-600">{campaign.businesses.business_name}</p>
+              <h1 className="text-2xl font-bold text-black mt-1">{campaign.name}</h1>
+              <p className="text-black">{campaign.businesses.business_name}</p>
             </div>
             <div className="flex items-center gap-4">
               {campaign.status === 'draft' && (
                 <button
                   onClick={handleStartScraping}
                   disabled={actionLoading}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50"
                 >
                   Start Scraping
                 </button>
               )}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Campaign Stats */}
-      <div className="container mx-auto px-4 py-6">
+        {/* Campaign Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-600">Target Leads</p>
-            <p className="text-2xl font-bold">{campaign.search_parameters.numberOfLeads}</p>
+          <div className="border border-black rounded-lg p-4">
+            <p className="text-sm text-black">Target Leads</p>
+            <p className="text-2xl font-bold text-black">{campaign.search_parameters.numberOfLeads}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-600">Leads Scraped</p>
-            <p className="text-2xl font-bold">{campaign.leads_scraped}</p>
+          <div className="border border-black rounded-lg p-4">
+            <p className="text-sm text-black">Leads Scraped</p>
+            <p className="text-2xl font-bold text-black">{campaign.leads_scraped}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-600">Calls Made</p>
-            <p className="text-2xl font-bold">{campaign.leads_called}</p>
+          <div className="border border-black rounded-lg p-4">
+            <p className="text-sm text-black">Calls Made</p>
+            <p className="text-2xl font-bold text-black">{campaign.leads_called}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-600">Appointments</p>
-            <p className="text-2xl font-bold">{campaign.appointments_booked}</p>
+          <div className="border border-black rounded-lg p-4">
+            <p className="text-sm text-black">Appointments</p>
+            <p className="text-2xl font-bold text-black">{campaign.appointments_booked}</p>
           </div>
         </div>
 
         {/* Lead Management */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="border border-black rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Leads</h2>
+              <h2 className="text-lg font-semibold text-black">Leads</h2>
               <div className="flex items-center gap-4">
                 {/* Filter */}
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm bg-white text-black"
                 >
                   <option value="all">All Leads</option>
                   <option value="validated">Validated</option>
@@ -273,13 +271,13 @@ export default function CampaignDetailPage() {
                 {/* Actions */}
                 {selectedLeads.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-black">
                       {selectedLeads.length} selected
                     </span>
                     <button
                       onClick={handleEnrichLeads}
                       disabled={actionLoading}
-                      className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 disabled:opacity-50"
+                      className="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800 disabled:opacity-50"
                     >
                       Enrich Contacts
                     </button>
@@ -287,7 +285,7 @@ export default function CampaignDetailPage() {
                       <button
                         onClick={handleStartCalling}
                         disabled={actionLoading}
-                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                        className="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800 disabled:opacity-50"
                       >
                         Start Calling
                       </button>
@@ -301,7 +299,7 @@ export default function CampaignDetailPage() {
           {/* Lead Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-100/50">
                 <tr>
                   <th className="px-6 py-3 text-left">
                     <input
@@ -316,26 +314,26 @@ export default function CampaignDetailPage() {
                       }}
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
                     Business
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
                     Score
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
+                  <tr key={lead.id} className="hover:bg-gray-100/30">
                     <td className="px-6 py-4">
                       <input
                         type="checkbox"
@@ -350,17 +348,17 @@ export default function CampaignDetailPage() {
                       />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{lead.business_name}</div>
+                      <div className="text-sm font-medium text-black">{lead.business_name}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{lead.contact_name || '-'}</div>
-                      <div className="text-sm text-gray-600">{lead.contact_title || '-'}</div>
+                      <div className="text-sm text-black">{lead.contact_name || '-'}</div>
+                      <div className="text-sm text-gray-700">{lead.contact_title || '-'}</div>
                       {lead.contact_phone && (
-                        <div className="text-sm text-gray-600">{lead.contact_phone}</div>
+                        <div className="text-sm text-gray-700">{lead.contact_phone}</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{lead.validation_score}/100</div>
+                      <div className="text-sm font-medium text-black">{lead.validation_score}/100</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(lead.status)}`}>
@@ -368,7 +366,7 @@ export default function CampaignDetailPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-indigo-600 hover:text-indigo-800 text-sm">
+                      <button className="text-black hover:text-gray-700 text-sm">
                         View Details
                       </button>
                     </td>

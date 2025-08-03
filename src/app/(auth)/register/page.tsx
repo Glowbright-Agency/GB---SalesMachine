@@ -104,7 +104,7 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        // Create user profile
+        // Create user profile with 1000 initial credits
         const { error: profileError } = await supabase
           .from('users')
           .insert({
@@ -112,6 +112,7 @@ export default function RegisterPage() {
             email: formData.email,
             full_name: formData.fullName,
             company_name: formData.companyName,
+            credits: 1000
           })
 
         if (profileError) {
@@ -132,43 +133,43 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Header with Logo */}
-      <header className="bg-white px-8 py-6">
+      <header className="bg-black px-8 py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/onboarding" className="flex items-center gap-3 cursor-pointer">
             <img src="/logo.svg" alt="Sales Machine" className="h-8 w-auto" />
-          </div>
+          </Link>
           
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-300">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-gray-900 hover:text-gray-700">
+            <Link href="/login" className="font-medium text-white hover:text-gray-300">
               Sign in
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Purple Container */}
+      {/* Main Pink Container */}
       <main className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <div className="rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center" style={{ backgroundColor: '#fcb3ce' }}>
           <div className="max-w-md w-full text-center px-8">
-            <h1 className="text-3xl md:text-4xl font-medium text-gray-800 mb-6 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-medium text-black mb-6 leading-tight">
               Create Your Account
             </h1>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-black opacity-70 mb-8">
               Join thousands building their sales machines
             </p>
 
             <form className="space-y-6" onSubmit={handleRegister}>
               <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 text-left space-y-6">
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-red-100 p-4">
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
                 <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="fullName" className="block text-sm font-medium text-black mb-2">
                     Full Name
                   </label>
                   <input
@@ -177,7 +178,7 @@ export default function RegisterPage() {
                     type="text"
                     autoComplete="name"
                     required
-                    className="w-full text-lg text-gray-600 placeholder-gray-500 bg-transparent border-0 border-b-2 border-gray-700 focus:border-gray-900 focus:outline-none py-3"
+                    className="w-full text-lg text-black placeholder-black/50 bg-transparent border-0 border-b-2 border-black/50 focus:border-black focus:outline-none py-3"
                     placeholder="John Doe"
                     value={formData.fullName}
                     onChange={handleChange}
@@ -185,7 +186,7 @@ export default function RegisterPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="companyName" className="block text-sm font-medium text-black mb-2">
                     Company Name
                   </label>
                   <input
@@ -194,7 +195,7 @@ export default function RegisterPage() {
                     type="text"
                     autoComplete="organization"
                     required
-                    className="w-full text-lg text-gray-600 placeholder-gray-500 bg-transparent border-0 border-b-2 border-gray-700 focus:border-gray-900 focus:outline-none py-3"
+                    className="w-full text-lg text-black placeholder-black/50 bg-transparent border-0 border-b-2 border-black/50 focus:border-black focus:outline-none py-3"
                     placeholder="Acme Inc."
                     value={formData.companyName}
                     onChange={handleChange}
@@ -202,7 +203,7 @@ export default function RegisterPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
                     Email Address
                   </label>
                   <input
@@ -211,7 +212,7 @@ export default function RegisterPage() {
                     type="email"
                     autoComplete="email"
                     required
-                    className="w-full text-lg text-gray-600 placeholder-gray-500 bg-transparent border-0 border-b-2 border-gray-700 focus:border-gray-900 focus:outline-none py-3"
+                    className="w-full text-lg text-black placeholder-black/50 bg-transparent border-0 border-b-2 border-black/50 focus:border-black focus:outline-none py-3"
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -219,7 +220,7 @@ export default function RegisterPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
                     Password
                   </label>
                   <input
@@ -228,7 +229,7 @@ export default function RegisterPage() {
                     type="password"
                     autoComplete="new-password"
                     required
-                    className="w-full text-lg text-gray-600 placeholder-gray-500 bg-transparent border-0 border-b-2 border-gray-700 focus:border-gray-900 focus:outline-none py-3"
+                    className="w-full text-lg text-black placeholder-black/50 bg-transparent border-0 border-b-2 border-black/50 focus:border-black focus:outline-none py-3"
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
@@ -238,7 +239,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {loading ? 'Creating account...' : 'Create account'}
                 </button>

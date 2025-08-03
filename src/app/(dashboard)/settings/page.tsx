@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <div className="space-y-8">
             
             {/* Profile Settings */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8">
+            <div className="border border-black rounded-2xl shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
               
               <form onSubmit={handleSave} className="space-y-6">
@@ -180,7 +180,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Account Information */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8">
+            <div className="border border-black rounded-2xl shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Information</h2>
               
               <div className="space-y-4">
@@ -206,7 +206,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 border-l-4 border-red-500">
+            <div className="border border-black rounded-2xl shadow-xl p-8 border-l-4 border-red-500">
               <h2 className="text-2xl font-bold text-red-900 mb-6">Danger Zone</h2>
               
               <div className="space-y-4">

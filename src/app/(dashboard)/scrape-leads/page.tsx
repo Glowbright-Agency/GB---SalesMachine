@@ -2,6 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+
+interface BusinessData {
+  businessName: string
+  industry: string
+  description: string
+  valueProposition: string
+  targetMarkets: any[]
+  competitiveAdvantage: string
+  discoveryAnswers?: any
+  targetCustomers?: Array<{
+    type?: string
+    description?: string
+  }>
+}
 
 interface SalesTarget {
   id: string
@@ -16,78 +31,97 @@ interface LocationSuggestion {
 
 export default function ScrapeLeadsPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [step, setStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [businessData, setBusinessData] = useState<BusinessData | null>(null)
+  const [credits, setCredits] = useState(0)
   
   // Form data
-  const [salesTargets, setSalesTargets] = useState<SalesTarget[]>([])
   const [location, setLocation] = useState('')
+  const [salesTargets, setSalesTargets] = useState<SalesTarget[]>([])
   const [quantity, setQuantity] = useState(50)
-  const [scrapedLeads, setScrapedLeads] = useState<any[]>([])
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
-  const [businessContext, setBusinessContext] = useState<any>(null)
+  const [scrapedLeads, setScrapedLeads] = useState<any[]>([])
 
-  // Location suggestions
+  // Location suggestions for autocomplete
   const locationSuggestions: LocationSuggestion[] = [
     { city: 'New York', state: 'NY', displayName: 'New York, NY' },
     { city: 'Los Angeles', state: 'CA', displayName: 'Los Angeles, CA' },
     { city: 'Chicago', state: 'IL', displayName: 'Chicago, IL' },
     { city: 'Houston', state: 'TX', displayName: 'Houston, TX' },
     { city: 'Phoenix', state: 'AZ', displayName: 'Phoenix, AZ' },
+    { city: 'Miami', state: 'FL', displayName: 'Miami, FL' },
     { city: 'Philadelphia', state: 'PA', displayName: 'Philadelphia, PA' },
     { city: 'San Antonio', state: 'TX', displayName: 'San Antonio, TX' },
     { city: 'San Diego', state: 'CA', displayName: 'San Diego, CA' },
     { city: 'Dallas', state: 'TX', displayName: 'Dallas, TX' },
     { city: 'Austin', state: 'TX', displayName: 'Austin, TX' },
-    { city: 'Jacksonville', state: 'FL', displayName: 'Jacksonville, FL' },
-    { city: 'Fort Worth', state: 'TX', displayName: 'Fort Worth, TX' },
-    { city: 'Columbus', state: 'OH', displayName: 'Columbus, OH' },
-    { city: 'Charlotte', state: 'NC', displayName: 'Charlotte, NC' },
-    { city: 'San Francisco', state: 'CA', displayName: 'San Francisco, CA' },
-    { city: 'Indianapolis', state: 'IN', displayName: 'Indianapolis, IN' },
-    { city: 'Seattle', state: 'WA', displayName: 'Seattle, WA' },
-    { city: 'Denver', state: 'CO', displayName: 'Denver, CO' },
-    { city: 'Boston', state: 'MA', displayName: 'Boston, MA' },
-    { city: 'Nashville', state: 'TN', displayName: 'Nashville, TN' }
+    { city: 'Seattle', state: 'WA', displayName: 'Seattle, WA' }
   ]
 
-  // Load business context and AI suggestions on page load
   useEffect(() => {
-    loadBusinessContextAndSuggestions()
+    loadBusinessData()
+    loadUserCredits()
   }, [])
 
-  const addSalesTarget = () => {
-    if (salesTargets.length >= 3) {
-      alert('Maximum 3 sales targets allowed')
-      return
-    }
-    const newTarget: SalesTarget = {
-      id: Date.now().toString(),
-      name: ''
-    }
-    setSalesTargets([...salesTargets, newTarget])
-  }
-
-  // Load business context and generate AI suggestions on page load
-  const loadBusinessContextAndSuggestions = async () => {
+  const loadBusinessData = async () => {
     try {
-      // Get business knowledge base from Supabase
+      // First try to get from Supabase
       const response = await fetch('/api/knowledge-base')
       if (response.ok) {
         const data = await response.json()
         if (data.business && data.knowledgeBase) {
-          setBusinessContext(data.knowledgeBase)
-          // Auto-generate AI suggestions based on business context
-          await generateAISuggestions(data.knowledgeBase)
+          const businessData: BusinessData = {
+            businessName: data.business.business_name || 'Your Business',
+            industry: data.business.industry || 'General',
+            description: data.business.description || '',
+            valueProposition: data.business.value_proposition || '',
+            targetMarkets: data.business.target_markets || [],
+            competitiveAdvantage: data.knowledgeBase.competitiveAdvantage || '',
+            discoveryAnswers: data.business.discovery_answers || {},
+            targetCustomers: data.knowledgeBase.targetCustomers || []
+          }
+          setBusinessData(businessData)
+          await generateAISuggestions(businessData)
+          return
         }
       }
+      
+      // Fallback to localStorage
+      const analysisData = localStorage.getItem('businessAnalysis')
+      if (analysisData) {
+        const analysis = JSON.parse(analysisData)
+        setBusinessData(analysis)
+        await generateAISuggestions(analysis)
+      }
     } catch (error) {
-      console.error('Error loading business context:', error)
+      console.error('Error loading business data:', error)
     }
   }
 
-  const generateAISuggestions = async (knowledgeBase = businessContext) => {
+  const loadUserCredits = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('credits')
+          .eq('id', user.id)
+          .single()
+        
+        setCredits(userData?.credits || 1000)
+      }
+    } catch (error) {
+      console.error('Error loading credits:', error)
+      setCredits(1000) // Default fallback
+    }
+  }
+
+  const generateAISuggestions = async (businessData: BusinessData | null) => {
+    if (!businessData) return
+    
     setIsGeneratingAI(true)
     try {
       const response = await fetch('/api/ai-suggest', {
@@ -98,7 +132,7 @@ export default function ScrapeLeadsPage() {
         body: JSON.stringify({
           type: 'sales_targets',
           location: location,
-          businessContext: knowledgeBase, // Pass the business knowledge base
+          businessContext: businessData,
           context: 'business lead scraping based on business analysis'
         }),
       })
@@ -107,7 +141,7 @@ export default function ScrapeLeadsPage() {
         const data = await response.json()
         setAiSuggestions(data.suggestions || [])
         
-        // AI-FIRST: Pre-fill the first 3 suggestions automatically
+        // Auto-fill first 3 suggestions if no targets exist
         if (data.suggestions && data.suggestions.length > 0 && salesTargets.length === 0) {
           const prefilledTargets = data.suggestions.slice(0, 3).map((suggestion: string, index: number) => ({
             id: `prefilled-${index}`,
@@ -118,33 +152,22 @@ export default function ScrapeLeadsPage() {
       }
     } catch (error) {
       console.error('Error generating AI suggestions:', error)
-      // Fallback suggestions based on business context if available
-      const fallbackSuggestions = knowledgeBase?.targetCustomers?.map((customer: any) => 
-        customer.type || customer.description
-      ).filter(Boolean).slice(0, 6) || [
-        'Restaurants',
-        'Law Firms', 
-        'Medical Clinics',
-        'Real Estate Agencies',
-        'Dental Practices',
-        'Auto Repair Shops'
-      ]
-      setAiSuggestions(fallbackSuggestions)
+      // Smart fallback based on business data
+      if (businessData.targetCustomers && businessData.targetCustomers.length > 0) {
+        const fallbackSuggestions = businessData.targetCustomers
+          .map(customer => customer.type || customer.description)
+          .filter((item): item is string => Boolean(item))
+          .slice(0, 6)
+        setAiSuggestions(fallbackSuggestions)
+      }
     } finally {
       setIsGeneratingAI(false)
     }
   }
 
-  const useSuggestion = (suggestion: string) => {
-    if (salesTargets.length >= 3) {
-      alert('Maximum 3 sales targets allowed')
-      return
-    }
-    const newTarget: SalesTarget = {
-      id: Date.now().toString(),
-      name: suggestion
-    }
-    setSalesTargets([...salesTargets, newTarget])
+  const addSalesTarget = () => {
+    if (salesTargets.length >= 3) return
+    setSalesTargets([...salesTargets, { id: Date.now().toString(), name: '' }])
   }
 
   const updateSalesTarget = (id: string, name: string) => {
@@ -157,9 +180,14 @@ export default function ScrapeLeadsPage() {
     setSalesTargets(salesTargets.filter(target => target.id !== id))
   }
 
+  const useSuggestion = (suggestion: string) => {
+    if (salesTargets.length >= 3) return
+    setSalesTargets([...salesTargets, { id: Date.now().toString(), name: suggestion }])
+  }
+
   const nextStep = () => {
     if (step === 1 && !location) {
-      alert('Please select a location')
+      alert('Please enter a location')
       return
     }
     if (step === 2 && salesTargets.length === 0) {
@@ -178,7 +206,7 @@ export default function ScrapeLeadsPage() {
   }
 
   const startScraping = async () => {
-    setIsLoading(true)
+    setLoading(true)
     setScrapedLeads([])
     
     try {
@@ -189,157 +217,148 @@ export default function ScrapeLeadsPage() {
         return
       }
 
-      // Process each target in stages
-      let allLeads: any[] = []
-      const leadsPerTarget = Math.ceil(quantity / validTargets.length)
-      
-      for (let i = 0; i < validTargets.length; i++) {
-        const target = validTargets[i]
-        console.log(`Processing target ${i + 1}/${validTargets.length}: ${target}`)
-        
-        const response = await fetch('/api/scrape-business-leads', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            salesTargets: [target], // Single target per request
-            location,
-            quantity: leadsPerTarget,
-            stage: i + 1,
-            totalStages: validTargets.length
-          }),
-        })
+      const response = await fetch('/api/scrape-business-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          salesTargets: validTargets,
+          location,
+          quantity,
+        }),
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to scrape leads')
-        }
-
-        const data = await response.json()
-        if (data.leads && data.leads.length > 0) {
-          allLeads = [...allLeads, ...data.leads]
-          setScrapedLeads(allLeads) // Update progress
-        }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to scrape leads')
       }
 
-      setStep(4) // Results step
+      const data = await response.json()
+      if (data.leads && data.leads.length > 0) {
+        setScrapedLeads(data.leads)
+        setStep(4) // Results step
+      } else {
+        alert('No leads found. Try adjusting your search criteria.')
+      }
     } catch (error) {
       console.error('Error scraping leads:', error)
       alert(`Failed to scrape leads: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const renderStep = () => {
+  const renderStepContent = () => {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Select Location</h2>
-              <p className="text-gray-600">Choose the city where you want to scrape business leads</p>
-            </div>
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-6">
+              Select Your Target Location
+            </h1>
+            <p className="text-xl text-gray-600 mb-12">
+              Choose the city where you want to find business leads
+            </p>
 
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="Type a location (e.g., Miami, FL)"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none text-lg"
-              />
-            </div>
+            <div className="space-y-8">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Enter city (e.g., Miami, FL)"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full px-6 py-4 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none"
+                />
+              </div>
 
-            {!location && (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500 mb-3">Or choose from popular cities:</p>
+              {!location && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {locationSuggestions.slice(0, 12).map((loc) => (
                     <button
                       key={loc.displayName}
                       onClick={() => setLocation(loc.displayName)}
-                      className="p-3 text-left rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                      className="p-3 text-center border border-gray-200 rounded-lg hover:border-gray-900 hover:bg-gray-50 transition-all"
                     >
-                      <div className="text-sm font-medium text-gray-900">{loc.displayName}</div>
+                      {loc.displayName}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Sales Targets</h2>
-              <p className="text-gray-600">What types of businesses do you want to target? (Max 3)</p>
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                Define Your Sales Targets
+              </h1>
+              <p className="text-xl text-gray-600">
+                What types of businesses do you want to target in {location}?
+              </p>
             </div>
 
             {/* Business Context Display */}
-            {businessContext && (
-              <div className="bg-green-50 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-600">🧠</span>
-                  <h3 className="font-semibold text-green-800">Complete Knowledge Base Active</h3>
+            {businessData && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-600 font-semibold">✓</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-900">
+                    Business Knowledge Base Active
+                  </h3>
                 </div>
-                <p className="text-sm text-green-700 mb-2">
-                  <strong>{businessContext.businessName}</strong> 
-                  {businessContext.industry && ` (${businessContext.industry})`}
-                </p>
-                <div className="grid grid-cols-2 gap-4 text-xs text-green-600">
+                <div className="grid md:grid-cols-2 gap-4 text-sm text-green-800">
                   <div>
-                    <span className="font-medium">📊 Website Analysis:</span> 
-                    {businessContext.valueProposition ? ' ✓' : ' ⏳'}
+                    <strong>Business:</strong> {businessData.businessName}
                   </div>
                   <div>
-                    <span className="font-medium">💬 Discovery Questions:</span> 
-                    {businessContext.discoveryAnswers?.target_audience ? ' ✓' : ' ⏳'}
+                    <strong>Industry:</strong> {businessData.industry}
                   </div>
+                  <div className="md:col-span-2">
+                    <strong>Value Proposition:</strong> {businessData.valueProposition}
+                  </div>
+                  {businessData.discoveryAnswers?.target_audience && (
+                    <div className="md:col-span-2">
+                      <strong>Target Audience:</strong> {businessData.discoveryAnswers.target_audience}
+                    </div>
+                  )}
                 </div>
-                {businessContext.discoveryAnswers?.target_audience && (
-                  <p className="text-xs text-green-600 mt-2">
-                    <strong>Target:</strong> {businessContext.discoveryAnswers.target_audience}
-                  </p>
-                )}
               </div>
             )}
 
-            {/* AI-Generated Suggestions */}
-            <div className="bg-purple-50 rounded-xl p-6">
+            {/* AI Suggestions */}
+            <div className="bg-gray-50 rounded-lg p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">🤖 Gemini 2.5 Suggestions</h3>
+                <h3 className="text-lg font-semibold text-gray-900">🤖 AI Suggestions</h3>
                 <button
-                  onClick={() => generateAISuggestions()}
+                  onClick={() => generateAISuggestions(businessData)}
                   disabled={isGeneratingAI}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    isGeneratingAI
-                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
-                  }`}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 text-sm"
                 >
-                  {isGeneratingAI ? 'Regenerating...' : 'Regenerate AI'}
+                  {isGeneratingAI ? 'Generating...' : 'Refresh'}
                 </button>
               </div>
               
-              <p className="text-sm text-purple-700 mb-4">
-                Based on your business analysis, these are ideal prospects who need your services:
+              <p className="text-gray-600 mb-4 text-sm">
+                Based on your business analysis, these are ideal prospects:
               </p>
               
               {aiSuggestions.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {aiSuggestions.map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => useSuggestion(suggestion)}
                       disabled={salesTargets.length >= 3}
-                      className={`p-2 text-sm rounded-lg border transition-all ${
+                      className={`p-2 text-sm border rounded-lg transition-all ${
                         salesTargets.length >= 3
                           ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'border-purple-200 text-purple-700 hover:bg-purple-100'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-900 hover:bg-white'
                       }`}
                     >
                       + {suggestion}
@@ -349,29 +368,26 @@ export default function ScrapeLeadsPage() {
               )}
             </div>
 
-            <div className="space-y-3">
+            {/* Sales Targets Input */}
+            <div className="space-y-4 mb-8">
               {salesTargets.map((target, index) => (
-                <div key={target.id} className="space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                      Target {index + 1}
-                    </span>
+                <div key={target.id} className="flex gap-4 items-center">
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold">
+                    {index + 1}
                   </div>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      placeholder="e.g., Restaurants, Law Firms, Medical Clinics"
-                      value={target.name}
-                      onChange={(e) => updateSalesTarget(target.id, e.target.value)}
-                      className="flex-1 p-4 border-2 border-gray-200 rounded-xl focus:border-purple-600 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => removeSalesTarget(target.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g., Restaurants, Law Firms, Medical Clinics"
+                    value={target.name}
+                    onChange={(e) => updateSalesTarget(target.id, e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none"
+                  />
+                  <button
+                    onClick={() => removeSalesTarget(target.id)}
+                    className="px-4 py-3 text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
@@ -379,7 +395,7 @@ export default function ScrapeLeadsPage() {
             {salesTargets.length < 3 && (
               <button
                 onClick={addSalesTarget}
-                className="w-full p-4 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 font-medium hover:border-purple-600 hover:bg-purple-50 transition-all"
+                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 font-medium hover:border-gray-900 hover:text-gray-900 transition-all"
               >
                 + Add Sales Target ({salesTargets.length}/3)
               </button>
@@ -389,41 +405,44 @@ export default function ScrapeLeadsPage() {
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Quantity</h2>
-              <p className="text-gray-600">How many business leads do you want to scrape?</p>
-            </div>
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-6">
+              Configure Your Scraping
+            </h1>
+            <p className="text-xl text-gray-600 mb-12">
+              How many leads do you want to scrape?
+            </p>
 
-            <div className="bg-gray-50 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-700 font-medium">Number of leads:</span>
-                <span className="text-2xl font-bold text-purple-600">{quantity}</span>
+            <div className="bg-gray-50 rounded-lg p-8 mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-lg font-semibold text-gray-900">Number of leads:</span>
+                <span className="text-3xl font-bold text-gray-900">{quantity}</span>
               </div>
               
               <input
                 type="range"
                 min="10"
-                max="1000"
+                max="500"
                 step="10"
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
               
               <div className="flex justify-between text-sm text-gray-500 mt-2">
                 <span>10</span>
-                <span>1000</span>
+                <span>500</span>
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded-xl p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Scraping Summary</h3>
-              <div className="space-y-2 text-sm text-gray-700">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="font-semibold text-blue-900 mb-4">Scraping Summary</h3>
+              <div className="space-y-2 text-sm text-blue-800 text-left">
                 <div><strong>Location:</strong> {location}</div>
                 <div><strong>Targets:</strong> {salesTargets.map(t => t.name).join(', ')}</div>
                 <div><strong>Quantity:</strong> {quantity} leads</div>
-                <div><strong>Data Fields:</strong> Business Name, Niche, Website, City, State, Phone Number</div>
+                <div><strong>Cost:</strong> ${(quantity * 0.20).toFixed(2)} ({quantity} × $0.20)</div>
+                <div><strong>Data Fields:</strong> Business Name, Category, Website, Phone, Address, Reviews</div>
               </div>
             </div>
           </div>
@@ -431,33 +450,38 @@ export default function ScrapeLeadsPage() {
 
       case 4:
         return (
-          <div className="space-y-6">
+          <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Scraping Results</h2>
-              <p className="text-gray-600">Successfully scraped {scrapedLeads.length} business leads</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                Scraping Results
+              </h1>
+              <p className="text-xl text-gray-600">
+                Successfully scraped {scrapedLeads.length} business leads
+              </p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-6 max-h-96 overflow-y-auto">
-              {scrapedLeads.length > 0 ? (
-                <div className="space-y-4">
-                  {scrapedLeads.map((lead, index) => (
-                    <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div><strong>Business:</strong> {lead.businessName || 'N/A'}</div>
-                        <div><strong>Category:</strong> {lead.category || 'N/A'}</div>
-                        <div><strong>Website:</strong> {lead.website || 'N/A'}</div>
-                        <div><strong>Phone:</strong> {lead.phone || 'N/A'}</div>
-                        <div><strong>Address:</strong> {lead.address || 'N/A'}</div>
-                        <div><strong>Rating:</strong> {lead.rating ? `${lead.rating} (${lead.reviewsCount} reviews)` : 'N/A'}</div>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-8">
+              <div className="max-h-96 overflow-y-auto">
+                {scrapedLeads.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {scrapedLeads.map((lead, index) => (
+                      <div key={index} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <div><strong>Business:</strong> {lead.businessName || 'N/A'}</div>
+                          <div><strong>Category:</strong> {lead.category || 'N/A'}</div>
+                          <div><strong>Website:</strong> {lead.website || 'N/A'}</div>
+                          <div><strong>Phone:</strong> {lead.phone || 'N/A'}</div>
+                          <div className="md:col-span-2"><strong>Address:</strong> {lead.address || 'N/A'}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  No leads found. Try adjusting your search criteria.
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-12">
+                    No leads found. Try adjusting your search criteria.
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-4">
@@ -469,31 +493,33 @@ export default function ScrapeLeadsPage() {
                   setLocation('')
                   setQuantity(50)
                 }}
-                className="flex-1 bg-gray-600 text-white py-4 px-6 rounded-full font-medium hover:bg-gray-700 transition-all"
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition-all"
               >
                 Start New Scrape
               </button>
               
-              <button
-                onClick={() => {
-                  const csvContent = "data:text/csv;charset=utf-8," + 
-                    "Business Name,Category,Website,Phone,Address,Rating,Reviews\n" +
-                    scrapedLeads.map(lead => 
-                      `"${lead.businessName || ''}","${lead.category || ''}","${lead.website || ''}","${lead.phone || ''}","${lead.address || ''}","${lead.rating || ''}","${lead.reviewsCount || ''}"`
-                    ).join("\n")
-                  
-                  const encodedUri = encodeURI(csvContent)
-                  const link = document.createElement("a")
-                  link.setAttribute("href", encodedUri)
-                  link.setAttribute("download", "business_leads.csv")
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
-                }}
-                className="flex-1 bg-green-600 text-white py-4 px-6 rounded-full font-medium hover:bg-green-700 transition-all"
-              >
-                Export CSV
-              </button>
+              {scrapedLeads.length > 0 && (
+                <button
+                  onClick={() => {
+                    const csvContent = "data:text/csv;charset=utf-8," + 
+                      "Business Name,Category,Website,Phone,Address,Rating,Reviews\n" +
+                      scrapedLeads.map(lead => 
+                        `"${lead.businessName || ''}","${lead.category || ''}","${lead.website || ''}","${lead.phone || ''}","${lead.address || ''}","${lead.rating || ''}","${lead.reviewsCount || ''}"`
+                      ).join("\n")
+                    
+                    const encodedUri = encodeURI(csvContent)
+                    const link = document.createElement("a")
+                    link.setAttribute("href", encodedUri)
+                    link.setAttribute("download", "business_leads.csv")
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                  }}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all"
+                >
+                  Export CSV
+                </button>
+              )}
             </div>
           </div>
         )
@@ -504,92 +530,88 @@ export default function ScrapeLeadsPage() {
   }
 
   return (
-    <div className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-      <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-160px)] p-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-medium text-gray-800 mb-2">
-              Scrape Business Leads
-            </h1>
-            <p className="text-gray-600">
-              Test our lead scraping engine with Google Maps data
-            </p>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <img src="/logo.svg" alt="Sales Machine" className="h-8 w-auto" />
           </div>
+          
+          {/* Step Navigation */}
+          <nav className="flex items-center gap-8">
+            {[
+              { step: 1, label: 'Location' },
+              { step: 2, label: 'Targets' },
+              { step: 3, label: 'Configure' },
+              { step: 4, label: 'Results' }
+            ].map((navStep) => (
+              <div key={navStep.step} className="flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                  step === navStep.step
+                    ? 'bg-gray-900 text-white'
+                    : step > navStep.step
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {step > navStep.step ? '✓' : navStep.step}
+                </span>
+                <span className={`text-sm font-medium ${
+                  step === navStep.step
+                    ? 'text-gray-900'
+                    : step > navStep.step
+                    ? 'text-green-600'
+                    : 'text-gray-400'
+                }`}>
+                  {navStep.label}
+                </span>
+              </div>
+            ))}
+          </nav>
 
-          {/* Progress Steps */}
-          <div className="flex justify-center mb-8">
-            <div className="flex space-x-4">
-              {[1, 2, 3, 4].map((stepNumber) => (
-                <div
-                  key={stepNumber}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    stepNumber === step
-                      ? 'bg-purple-600 text-white'
-                      : stepNumber < step
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-300 text-gray-600'
-                  }`}
-                >
-                  {stepNumber < step ? '✓' : stepNumber}
-                </div>
-              ))}
+          {/* Credits Display */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Credits:</span>
+              <span className="font-semibold text-gray-900">{credits.toLocaleString()}</span>
             </div>
           </div>
-
-          {/* Main Content */}
-          <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8">
-            {renderStep()}
-
-            {/* Navigation Buttons */}
-            {step < 4 && (
-              <div className="flex gap-4 mt-8">
-                {step > 1 && (
-                  <button
-                    onClick={prevStep}
-                    className="flex-1 bg-gray-600 text-white py-4 px-6 rounded-full font-medium hover:bg-gray-700 transition-all"
-                  >
-                    Back
-                  </button>
-                )}
-                
-                <button
-                  onClick={nextStep}
-                  disabled={isLoading}
-                  className={`flex-1 py-4 px-6 rounded-full font-medium transition-all ${
-                    isLoading
-                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
-                  }`}
-                >
-                  {isLoading 
-                    ? `Scraping... (${scrapedLeads.length} leads found)` 
-                    : step === 3 ? 'Start Scraping' : 'Continue'}
-                </button>
-              </div>
-            )}
-          </div>
         </div>
-      </div>
+      </header>
 
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #7c3aed;
-          cursor: pointer;
-        }
-        
-        .slider::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #7c3aed;
-          cursor: pointer;
-        }
-      `}</style>
+      {/* Main Content */}
+      <main className="py-12 px-6">
+        {renderStepContent()}
+
+        {/* Navigation Buttons */}
+        {step < 4 && (
+          <div className="max-w-2xl mx-auto flex gap-4 mt-12">
+            {step > 1 && (
+              <button
+                onClick={prevStep}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition-all"
+              >
+                Back
+              </button>
+            )}
+            
+            <button
+              onClick={nextStep}
+              disabled={loading}
+              className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
+                loading
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-gray-900 text-white hover:bg-gray-800'
+              }`}
+            >
+              {loading 
+                ? `Scraping... (${scrapedLeads.length} leads found)` 
+                : step === 3 ? 'Start Scraping' : 'Continue'}
+            </button>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

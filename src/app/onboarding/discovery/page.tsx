@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 const discoveryQuestions = [
@@ -180,27 +181,27 @@ export default function DiscoveryQuestionsPage() {
   const isLastQuestion = currentQuestion === discoveryQuestions.length - 1
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Header with Logo and Navigation */}
-      <header className="bg-white px-8 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-black px-8 py-6">
+        <div className="w-[96vw] mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <Link href="/onboarding" className="flex items-center gap-3 cursor-pointer">
             <img src="/logo.svg" alt="Sales Machine" className="h-8 w-auto" />
-          </div>
+          </Link>
           
-          {/* Navigation Steps */}
+          {/* Navigation Steps - Centered */}
           <nav className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">✓</span>
-              <span className="text-sm font-medium text-green-600">Website Analysis</span>
+              <span className="text-sm font-medium text-green-400">Website Analysis</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
-              <span className="text-sm font-medium text-gray-900">Sales Targets</span>
+              <span className="text-sm font-medium text-white">Sales Targets</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-gray-300 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
+              <span className="bg-gray-600 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
               <span className="text-sm font-medium text-gray-400">Sign Up</span>
             </div>
           </nav>
@@ -208,7 +209,7 @@ export default function DiscoveryQuestionsPage() {
           {/* Don't Have Website Link */}
           <button
             onClick={() => router.push('/manual-setup')}
-            className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+            className="text-gray-300 hover:text-white text-sm font-medium"
           >
             Don't Have A Website?
           </button>
@@ -217,28 +218,28 @@ export default function DiscoveryQuestionsPage() {
 
       {/* Main Purple Container */}
       <main className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <div className="rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center" style={{ backgroundColor: '#fcb3ce' }}>
           <div className="max-w-4xl w-full text-center px-8">
             {/* Progress Bar */}
             <div className="mb-8">
-              <div className="flex justify-between text-sm text-gray-800 mb-2">
+              <div className="flex justify-between text-sm text-black mb-2">
                 <span>Question {currentQuestion + 1} of {discoveryQuestions.length}</span>
                 <span>{Math.round(((currentQuestion + 1) / discoveryQuestions.length) * 100)}% Complete</span>
               </div>
-              <div className="w-full bg-gray-700/20 rounded-full h-2">
+              <div className="w-full bg-black/20 rounded-full h-2">
                 <div 
-                  className="bg-gray-900 h-2 rounded-full transition-all duration-300"
+                  className="bg-black h-2 rounded-full transition-all duration-300"
                   style={{ width: `${((currentQuestion + 1) / discoveryQuestions.length) * 100}%` }}
                 />
               </div>
             </div>
 
             {/* Question Card */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 text-left">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="border border-black rounded-2xl p-8 text-left">
+            <h2 className="text-2xl font-bold text-black mb-2">
               {currentQ.question}
             </h2>
-            <p className="text-gray-600 mb-4">{currentQ.hint}</p>
+            <p className="text-black opacity-70 mb-4">{currentQ.hint}</p>
 
             {/* AI Suggestion Button */}
             {businessAnalysis && (
@@ -246,7 +247,7 @@ export default function DiscoveryQuestionsPage() {
                 <button
                   onClick={handleAISuggestion}
                   disabled={aiSuggesting || loading}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-black/20 text-black rounded-lg hover:bg-black/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <span className="text-xs">✨</span>
                   {aiSuggesting ? 'Getting AI suggestion...' : 'Get AI Suggestion'}
@@ -259,7 +260,7 @@ export default function DiscoveryQuestionsPage() {
                 value={currentAnswer}
                 onChange={(e) => handleAnswerChange(e.target.value)}
                 placeholder={currentQ.placeholder}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                className="w-full px-4 py-3 border border-black/30 rounded-lg focus:ring-2 focus:ring-black focus:border-black resize-none bg-white text-black"
                 rows={6}
                 disabled={loading}
               />
@@ -269,7 +270,7 @@ export default function DiscoveryQuestionsPage() {
                 value={currentAnswer}
                 onChange={(e) => handleAnswerChange(e.target.value)}
                 placeholder={currentQ.placeholder}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-4 py-3 border border-black/30 rounded-lg focus:ring-2 focus:ring-black focus:border-black bg-white text-black"
                 disabled={loading}
               />
             )}
@@ -285,7 +286,7 @@ export default function DiscoveryQuestionsPage() {
                 <button
                   onClick={handlePrevious}
                   disabled={currentQuestion === 0 || loading}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 text-black opacity-70 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ← Previous
                 </button>
@@ -294,7 +295,7 @@ export default function DiscoveryQuestionsPage() {
                   <button
                     onClick={handleComplete}
                     disabled={!currentAnswer.trim() || loading}
-                    className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Saving...' : 'Complete Setup'}
                   </button>
@@ -302,7 +303,7 @@ export default function DiscoveryQuestionsPage() {
                   <button
                     onClick={handleNext}
                     disabled={!currentAnswer.trim() || loading}
-                    className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
@@ -314,7 +315,7 @@ export default function DiscoveryQuestionsPage() {
             <div className="text-center mt-6">
               <button
                 onClick={() => router.push(`/campaigns/new?businessId=${businessId}`)}
-                className="text-gray-600 hover:text-gray-900 text-sm"
+                className="text-black opacity-70 hover:opacity-100 text-sm"
               >
                 Skip discovery questions (not recommended)
               </button>

@@ -1,14 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import AnimatedBackgroundColors from '@/components/AnimatedBackgroundColors'
+import TypingAnimation from '@/components/TypingAnimation'
 
 export default function OnboardingPage() {
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    // Ensure VAPI widget loads after component mounts
+    const loadVapiWidget = () => {
+      if (typeof window !== 'undefined' && window.customElements) {
+        // Widget should auto-load with the script
+        console.log('VAPI widget should be available')
+      }
+    }
+    
+    // Small delay to ensure script has loaded
+    const timer = setTimeout(loadVapiWidget, 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,50 +73,59 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Header with Logo and Navigation */}
-      <header className="bg-white px-8 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-black px-8 py-6">
+        <div className="w-[96vw] mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <Link href="/onboarding" className="flex items-center gap-3 cursor-pointer">
             <img src="/logo.svg" alt="Sales Machine" className="h-8 w-auto" />
-          </div>
+          </Link>
           
           {/* Navigation Steps */}
           <nav className="flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <span className="bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">1</span>
-              <span className="text-sm font-medium text-gray-900">Website Analysis</span>
+              <span className="bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">1</span>
+              <span className="text-sm font-medium text-white">Website Analysis</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-gray-300 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
+              <span className="bg-gray-600 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
               <span className="text-sm font-medium text-gray-400">Sales Targets</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-gray-300 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
+              <span className="bg-gray-600 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">3</span>
               <span className="text-sm font-medium text-gray-400">Sign Up</span>
             </div>
           </nav>
 
-          {/* Don't Have Website Link */}
+          {/* Log in Link */}
           <button
-            onClick={() => router.push('/manual-setup')}
-            className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+            onClick={() => router.push('/login')}
+            className="text-white hover:text-gray-300 text-sm font-medium"
           >
-            Don't Have A Website?
+            Log in
           </button>
         </div>
       </header>
 
-      {/* Main Purple Container */}
+      {/* Main Animated Container */}
       <main className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <AnimatedBackgroundColors className="rounded-3xl mx-4 min-h-[calc(100vh-140px)] flex items-center justify-center relative">
+          {/* Don't have a website button - positioned top-right */}
+          <button
+            onClick={() => router.push('/manual-setup')}
+            className="absolute top-6 right-6 bg-transparent text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-white hover:bg-opacity-10 transition-all"
+          >
+            Don't have a website?
+          </button>
+          
           <div className="max-w-2xl w-full text-center px-8">
-            <h1 className="text-3xl md:text-4xl font-medium text-gray-800 mb-6 leading-tight">
-              Share Your Website To <span className="font-semibold">Build Your Sales Machine</span> Automatically
+            <h1 className="text-3xl md:text-4xl font-light text-black mb-6 leading-tight">
+              Share your website to Build<br />
+              Your Sales Machine Automatically
             </h1>
-            <p className="text-lg text-gray-600 mb-12">
-              Our AI Will Analyze Your Website And Suggest The Best Sales Strategy
+            <p className="text-lg text-black mb-12 opacity-60">
+              Our AI will analyze your website and suggest the best sales strategy
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -109,15 +135,20 @@ export default function OnboardingPage() {
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="www.example.com"
-                  className="w-full text-xl text-gray-600 placeholder-gray-500 bg-transparent border-0 border-b-2 border-gray-700 focus:border-gray-900 focus:outline-none py-3 text-center"
+                  placeholder=""
+                  className="w-full text-xl text-black bg-transparent border-0 border-b-2 border-black focus:border-black focus:outline-none py-3 text-center"
                   required
                   disabled={loading}
                 />
+                {!websiteUrl && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <TypingAnimation className="text-xl text-black opacity-60" />
+                  </div>
+                )}
               </div>
 
               {error && (
-                <div className="text-red-600 text-sm">
+                <div className="text-red-700 text-sm bg-red-100 px-4 py-2 rounded-lg">
                   {error}
                 </div>
               )}
@@ -126,18 +157,18 @@ export default function OnboardingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="bg-white text-black border-2 border-black px-8 py-3 rounded-full font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {loading ? 'Analyzing...' : 'Submit'}
                 </button>
                 
-                <span className="text-gray-600 text-sm">
-                  Press <span className="font-semibold">Cmd ⌘ + Enter</span> ↵
+                <span className="text-black text-sm opacity-60">
+                  press <span className="font-semibold">Cmd ⌘ + Enter ↵</span>
                 </span>
               </div>
             </form>
           </div>
-        </div>
+        </AnimatedBackgroundColors>
       </main>
     </div>
   )

@@ -79,7 +79,7 @@ export default function BillingPage() {
           <div className="space-y-8">
             
             {/* Credit Balance - Simple */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 text-center">
+            <div className="border border-black rounded-2xl shadow-xl p-8 text-center">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Credits</h2>
               <div className="mb-6">
                 <p className="text-5xl font-bold text-gray-900 mb-2">{usageStats.creditsRemaining}</p>
@@ -91,7 +91,7 @@ export default function BillingPage() {
             </div>
 
             {/* Simple Pricing */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8">
+            <div className="border border-black rounded-2xl shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Simple Pricing</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -120,7 +120,7 @@ export default function BillingPage() {
 
             {/* Usage Summary - Simple */}
             {(usageStats.leadsScraped > 0 || usageStats.leadsCalled > 0 || usageStats.appointmentsBooked > 0) && (
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8">
+              <div className="border border-black rounded-2xl shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">This Month</h2>
                 <div className="grid grid-cols-3 gap-6 text-center">
                   <div>

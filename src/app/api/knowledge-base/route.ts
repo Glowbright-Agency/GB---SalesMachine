@@ -10,18 +10,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the user's active business knowledge base
-    const { data: business, error } = await supabase
+    // Get the user's most recent business knowledge base
+    let { data: business, error } = await supabase
       .from('businesses')
       .select('*')
       .eq('user_id', user.id)
-      .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
 
-    if (error || !business) {
-      return NextResponse.json({ error: 'No business knowledge base found' }, { status: 404 })
+    if (error) {
+      console.error('Database error:', error)
+      if (error.code === 'PGRST116') {
+        // No business found - create a default one
+        const defaultBusiness = {
+          user_id: user.id,
+          website_url: '',
+          business_name: 'My Business',
+          description: 'Business description',
+          value_proposition: 'Value proposition',
+          industry: 'General',
+          target_markets: [],
+          decision_maker_roles: [],
+          analysis_data: {},
+          discovery_answers: {}
+        }
+
+        const { data: newBusiness, error: createError } = await supabase
+          .from('businesses')
+          .insert(defaultBusiness)
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Failed to create default business:', createError)
+          return NextResponse.json({ error: 'Failed to create business profile' }, { status: 500 })
+        }
+
+        business = newBusiness
+      } else {
+        return NextResponse.json({ error: 'Database error occurred' }, { status: 500 })
+      }
+    }
+
+    if (!business) {
+      return NextResponse.json({ error: 'No business data available' }, { status: 404 })
     }
 
     // Create comprehensive knowledge base from both website analysis AND discovery answers
@@ -38,8 +71,7 @@ export async function GET(request: NextRequest) {
         userId: business.user_id,
         websiteUrl: business.website_url,
         createdAt: business.created_at,
-        updatedAt: business.updated_at,
-        isActive: business.is_active
+        updatedAt: business.updated_at
       }
     }
 

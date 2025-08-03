@@ -12,41 +12,43 @@ export async function POST(request: NextRequest) {
     if (type === 'sales_targets') {
       // Generate sales target suggestions based on COMPLETE business knowledge base
       const prompt = `
-      You are Gemini 2.5, the AI brain of the GB Sales Machine. Use the COMPLETE business knowledge base from onboarding to generate intelligent sales target suggestions.
+      You are an expert business analyst for GB Sales Machine. Analyze the complete business knowledge base to generate highly relevant sales target suggestions.
 
-      COMPREHENSIVE BUSINESS KNOWLEDGE BASE:
+      BUSINESS KNOWLEDGE BASE:
       ${JSON.stringify(businessContext, null, 2)}
 
-      CRITICAL DISCOVERY INSIGHTS:
+      KEY DISCOVERY DATA:
       ${businessContext?.discoveryAnswers ? `
-      - Measurable Outcome: ${businessContext.discoveryAnswers.measurable_outcome || 'Not provided'}
-      - Target Audience: ${businessContext.discoveryAnswers.target_audience || 'Not provided'}
-      - Key Differentiator: ${businessContext.discoveryAnswers.key_differentiator || 'Not provided'}
-      - Success Story: ${businessContext.discoveryAnswers.success_story || 'Not provided'}
-      - Qualification Criteria: ${businessContext.discoveryAnswers.qualification_criteria || 'Not provided'}
-      ` : 'Discovery answers not available'}
+      TARGET AUDIENCE: ${businessContext.discoveryAnswers.target_audience || 'Not specified'}
+      MEASURABLE OUTCOME: ${businessContext.discoveryAnswers.measurable_outcome || 'Not specified'}
+      KEY DIFFERENTIATOR: ${businessContext.discoveryAnswers.key_differentiator || 'Not specified'}
+      SUCCESS STORY: ${businessContext.discoveryAnswers.success_story || 'Not specified'}
+      QUALIFICATION CRITERIA: ${businessContext.discoveryAnswers.qualification_criteria || 'Not specified'}
+      ` : 'Discovery data incomplete'}
 
-      CONTEXT:
-      - Location: ${location || 'United States'}
-      - Purpose: ${context || 'business lead scraping'}
+      BUSINESS ANALYSIS:
+      ${businessContext?.businessName ? `BUSINESS: ${businessContext.businessName}` : ''}
+      ${businessContext?.industry ? `INDUSTRY: ${businessContext.industry}` : ''}
+      ${businessContext?.valueProposition ? `VALUE PROP: ${businessContext.valueProposition}` : ''}
+      ${businessContext?.targetCustomers ? `TARGET CUSTOMERS: ${JSON.stringify(businessContext.targetCustomers)}` : ''}
 
-      INSTRUCTIONS:
-      1. ANALYZE both website analysis AND discovery answers
-      2. Use the TARGET AUDIENCE from discovery answers as your primary guide
-      3. Cross-reference with website analysis for additional insights
-      4. Focus on the QUALIFICATION CRITERIA - who fits the buying profile?
-      5. Consider the SUCCESS STORY - what type of businesses succeeded?
-      6. Generate 6-8 specific business types that match the target audience profile
-      7. Each suggestion should be 1-3 words maximum
+      LOCATION: ${location || 'United States'}
 
-      PRIORITY LOGIC:
-      1. FIRST: Use target_audience from discovery answers
-      2. THEN: Cross-reference with targetCustomers from website analysis  
-      3. FINALLY: Apply success_story patterns and qualification_criteria
+      CRITICAL TASK:
+      Generate 6-8 specific business types that would be ideal prospects based on:
+      1. TARGET AUDIENCE from discovery answers (PRIMARY source)
+      2. Business analysis data (SECONDARY source)
+      3. Success story patterns
+      4. Qualification criteria
 
-      Return as a JSON array of strings targeting businesses that perfectly match your ideal customer profile.
-      
-      RESPOND ONLY WITH VALID JSON ARRAY.
+      REQUIREMENTS:
+      - Each suggestion must be 1-3 words (e.g., "Medical Clinics", "Law Firms", "Tech Startups")
+      - Focus on businesses that match the target audience profile
+      - Consider who would need the measurable outcome described
+      - Avoid generic suggestions unless they specifically match the business context
+
+      RESPOND WITH VALID JSON ARRAY ONLY - NO OTHER TEXT:
+      ["Business Type 1", "Business Type 2", "Business Type 3", ...]
       `
 
       const result = await model.generateContent(prompt)
@@ -54,25 +56,70 @@ export async function POST(request: NextRequest) {
       const text = response.text().trim()
       
       try {
-        const suggestions = JSON.parse(text)
-        return NextResponse.json({ 
-          success: true, 
-          suggestions: Array.isArray(suggestions) ? suggestions : []
-        })
+        // Clean the response - remove markdown code blocks and extra text
+        let cleanText = text
+        if (text.includes('```json')) {
+          cleanText = text.match(/```json\s*([\s\S]*?)\s*```/)?.[1] || text
+        } else if (text.includes('```')) {
+          cleanText = text.match(/```\s*([\s\S]*?)\s*```/)?.[1] || text
+        }
+        
+        // Remove any leading/trailing backticks or quotes
+        cleanText = cleanText.replace(/^[`"]+|[`"]+$/g, '').trim()
+        
+        console.log('Clean AI response:', cleanText)
+        
+        const suggestions = JSON.parse(cleanText)
+        if (Array.isArray(suggestions) && suggestions.length > 0) {
+          return NextResponse.json({ 
+            success: true, 
+            suggestions: suggestions
+          })
+        }
       } catch (parseError) {
-        // Fallback suggestions
-        return NextResponse.json({ 
-          success: true, 
-          suggestions: [
-            'Restaurants',
-            'Law Firms',
-            'Medical Clinics', 
-            'Real Estate Agencies',
-            'Dental Practices',
-            'Auto Repair Shops'
-          ]
-        })
+        console.log('JSON parse error:', parseError)
+        console.log('Original AI response:', text)
       }
+
+      // Enhanced fallback using business knowledge base if AI parsing fails
+      console.log('Using fallback suggestions with business context:', businessContext)
+      let fallbackSuggestions: string[] = []
+      
+      if (businessContext?.discoveryAnswers?.target_audience) {
+        // Try to extract business types from target audience
+        const targetAudience = businessContext.discoveryAnswers.target_audience.toLowerCase()
+        console.log('Target audience:', targetAudience)
+        
+        if (targetAudience.includes('health') || targetAudience.includes('medical') || targetAudience.includes('clinic')) {
+          fallbackSuggestions = ['Weight Loss Clinics', 'Medical Spas', 'Hormone Therapy Clinics', 'Dermatology Practices', 'Wellness Centers', 'Physical Therapy Clinics']
+        } else if (targetAudience.includes('tech') || targetAudience.includes('software') || targetAudience.includes('startup')) {
+          fallbackSuggestions = ['SaaS Companies', 'Tech Startups', 'Software Agencies', 'E-commerce Platforms', 'Digital Marketing Agencies', 'App Development Studios']
+        } else if (targetAudience.includes('business') || targetAudience.includes('professional') || targetAudience.includes('service')) {
+          fallbackSuggestions = ['Professional Services', 'Consulting Firms', 'Accounting Firms', 'Legal Practices', 'Marketing Agencies', 'Business Consultants']
+        } else if (targetAudience.includes('retail') || targetAudience.includes('store') || targetAudience.includes('shop')) {
+          fallbackSuggestions = ['Retail Stores', 'Boutique Shops', 'Auto Dealerships', 'Furniture Stores', 'Electronics Retailers', 'Fashion Boutiques']
+        }
+      }
+      
+      // Final fallback based on industry if we still don't have suggestions
+      if (fallbackSuggestions.length === 0) {
+        const industry = businessContext?.industry?.toLowerCase() || ''
+        
+        if (industry.includes('health') || industry.includes('medical')) {
+          fallbackSuggestions = ['Medical Clinics', 'Dental Practices', 'Physical Therapy', 'Urgent Care Centers']
+        } else if (industry.includes('tech') || industry.includes('software')) {
+          fallbackSuggestions = ['Software Companies', 'Tech Startups', 'IT Services', 'Digital Agencies']
+        } else {
+          // Last resort generic suggestions
+          fallbackSuggestions = ['Professional Services', 'Small Businesses', 'Service Companies', 'Local Retailers']
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        suggestions: fallbackSuggestions,
+        fallback_used: true
+      })
     }
 
     // Original discovery question logic

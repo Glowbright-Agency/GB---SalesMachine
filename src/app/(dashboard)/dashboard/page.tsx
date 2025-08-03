@@ -123,37 +123,37 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Main Purple Container */}
+    <div className="min-h-screen bg-black">
+      {/* Main Container like other pages */}
       <main className="px-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="bg-purple-300 rounded-3xl mx-4 min-h-[calc(100vh-160px)] p-8">
+        <div className="rounded-3xl mx-4 min-h-[calc(100vh-160px)] p-8" style={{ backgroundColor: '#ceb3fc' }}>
           <div className="max-w-7xl mx-auto">
             
             {/* Title */}
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-medium text-gray-800 mb-2">
+              <h1 className="text-3xl md:text-4xl font-light text-black mb-2">
                 Sales Machine Dashboard
               </h1>
-              <p className="text-lg text-gray-600">
+              <p className="text-lg text-black opacity-60">
                 Welcome back! Here's your sales performance overview
               </p>
             </div>
 
             {/* Business Recap Section */}
             {businessRecap && (
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Business Recap</h2>
-                <div className="space-y-4 text-gray-700 leading-relaxed">
+              <div className="border border-black rounded-2xl p-8 mb-8">
+                <h2 className="text-2xl font-bold text-black mb-6">Your Business Recap</h2>
+                <div className="space-y-4 text-black opacity-80 leading-relaxed">
                   <p>
                     <strong>{businessRecap.businessName || 'Your company'}</strong> is a {businessRecap.industry?.toLowerCase() || 'business'} that provides {businessRecap.description || 'products and services'} to {
                       businessRecap.targetMarkets && businessRecap.targetMarkets.length > 0 
@@ -176,8 +176,8 @@ export default function DashboardPage() {
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+            <div className="border border-black rounded-2xl p-8 mb-8">
+              <h2 className="text-2xl font-bold text-black mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link 
                   href="/campaigns/new"
@@ -207,21 +207,21 @@ export default function DashboardPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 text-center">
-                <p className="text-sm font-medium text-gray-600 mb-2">Total Leads</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalLeads}</p>
+              <div className="border border-black rounded-2xl p-6 text-center">
+                <p className="text-sm font-medium text-black opacity-60 mb-2">Total Leads</p>
+                <p className="text-3xl font-bold text-black">{stats.totalLeads}</p>
               </div>
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 text-center">
-                <p className="text-sm font-medium text-gray-600 mb-2">Calls Made</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalCalls}</p>
+              <div className="border border-black rounded-2xl p-6 text-center">
+                <p className="text-sm font-medium text-black opacity-60 mb-2">Calls Made</p>
+                <p className="text-3xl font-bold text-black">{stats.totalCalls}</p>
               </div>
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 text-center">
-                <p className="text-sm font-medium text-gray-600 mb-2">Appointments</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalAppointments}</p>
+              <div className="border border-black rounded-2xl p-6 text-center">
+                <p className="text-sm font-medium text-black opacity-60 mb-2">Appointments</p>
+                <p className="text-3xl font-bold text-black">{stats.totalAppointments}</p>
               </div>
-              <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 text-center">
-                <p className="text-sm font-medium text-gray-600 mb-2">Conversion Rate</p>
-                <p className="text-3xl font-bold text-gray-900">
+              <div className="border border-black rounded-2xl p-6 text-center">
+                <p className="text-sm font-medium text-black opacity-60 mb-2">Conversion Rate</p>
+                <p className="text-3xl font-bold text-black">
                   {stats.totalCalls > 0 
                     ? `${((stats.totalAppointments / stats.totalCalls) * 100).toFixed(1)}%`
                     : '0%'
@@ -231,56 +231,56 @@ export default function DashboardPage() {
             </div>
 
             {/* Campaigns Table */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl">
-              <div className="px-8 py-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Your Campaigns</h2>
+            <div className="border border-black rounded-2xl">
+              <div className="px-8 py-6 border-b border-black/20">
+                <h2 className="text-2xl font-bold text-black">Your Campaigns</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50/50">
+                  <thead className="bg-black/10">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Campaign</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Business</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Leads</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Calls</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Appointments</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Created</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Campaign</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Business</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Leads</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Calls</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Appointments</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Created</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-black opacity-80 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-black/20">
                     {campaigns.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={8} className="px-6 py-12 text-center text-black opacity-60">
                           No campaigns yet. 
-                          <Link href="/campaigns/new" className="ml-2 text-gray-900 font-medium hover:text-gray-700">
+                          <Link href="/campaigns/new" className="ml-2 text-black font-medium hover:opacity-80">
                             Create your first campaign
                           </Link>
                         </td>
                       </tr>
                     ) : (
                       campaigns.map((campaign) => (
-                        <tr key={campaign.id} className="hover:bg-gray-50/30">
+                        <tr key={campaign.id} className="hover:bg-black/5">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
+                            <div className="text-sm font-medium text-black">{campaign.name}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{campaign.businesses.business_name}</div>
+                            <div className="text-sm text-black opacity-80">{campaign.businesses.business_name}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status)}`}>
                               {campaign.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campaign.leads_scraped}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campaign.leads_called}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{campaign.appointments_booked}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{campaign.leads_scraped}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{campaign.leads_called}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{campaign.appointments_booked}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black opacity-80">
                             {new Date(campaign.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <Link href={`/campaigns/${campaign.id}`} className="text-gray-900 font-medium hover:text-gray-700">
+                            <Link href={`/campaigns/${campaign.id}`} className="text-black font-medium hover:opacity-80">
                               View Details
                             </Link>
                           </td>

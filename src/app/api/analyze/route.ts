@@ -28,7 +28,14 @@ export async function POST(request: NextRequest) {
     
     const prompt = `You are a business analyst creating a comprehensive knowledge base. Analyze this website content and extract detailed business information to build an AI knowledge base.
 
-IMPORTANT RULES:
+CRITICAL JSON FORMATTING RULES:
+1. MUST return ONLY valid JSON - no text before or after
+2. Use double quotes for ALL strings and property names
+3. NO trailing commas anywhere
+4. Escape quotes inside strings with backslashes
+5. Arrays and objects must be properly closed
+
+ANALYSIS RULES:
 1. Extract ALL available information from the website content
 2. Be comprehensive but factual - include everything that could be useful for sales/marketing
 3. Create detailed profiles that AI can use for sales scripts, targeting, and personalization
@@ -38,7 +45,7 @@ IMPORTANT RULES:
 Website URL: ${websiteUrl}
 Website Content: ${websiteContent}
 
-Create a comprehensive business knowledge base in JSON format:
+Return ONLY this JSON structure (no extra text):
 
 {
   "businessName": "Company name from headers, titles, or domain",
@@ -77,36 +84,80 @@ Create a comprehensive business knowledge base in JSON format:
   ]
 }
 
-RESPOND ONLY WITH VALID JSON. Be thorough and detailed for AI training purposes.`
+RESPOND ONLY WITH VALID JSON. Be thorough and detailed for AI training purposes.
+
+REMEMBER: Your response must be parseable by JSON.parse() - no markdown formatting, no extra text, just pure JSON.`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
     
-    // Parse JSON from response with improved error handling
+    // Parse JSON from response with robust error handling
     let analysisData
     try {
-      // Clean the response text
-      const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      // Clean the response text more thoroughly
+      let cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       
       // Try to find JSON in the response
       const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        analysisData = JSON.parse(jsonMatch[0])
+        let jsonString = jsonMatch[0]
         
-        // Validate required fields and provide fallbacks
-        analysisData = {
-          businessName: analysisData.businessName || extractBusinessName(websiteUrl),
-          description: analysisData.description || 'Business analysis completed',
-          valueProposition: analysisData.valueProposition || 'Providing valuable services to clients',
-          industry: analysisData.industry || 'Business Services',
-          targetMarkets: Array.isArray(analysisData.targetMarkets) ? analysisData.targetMarkets : [],
-          competitiveAdvantage: analysisData.competitiveAdvantage || 'Quality service and customer focus',
-          targetCustomers: analysisData.targetCustomers || [],
-          targetDecisionMakers: analysisData.targetDecisionMakers || []
+        // Try multiple parsing strategies
+        let parsed = null
+        
+        // Strategy 1: Try to parse as-is
+        try {
+          parsed = JSON.parse(jsonString)
+        } catch (error1) {
+          console.log('First parse attempt failed, trying repair...')
+          
+          // Strategy 2: Try with repair
+          try {
+            const repairedJson = repairJSON(jsonString)
+            parsed = JSON.parse(repairedJson)
+          } catch (error2) {
+            console.log('Repair attempt failed, trying aggressive cleanup...')
+            
+            // Strategy 3: Try aggressive cleanup
+            try {
+              // More aggressive JSON cleaning
+              let aggressiveClean = jsonString
+                .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+                .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')  // Quote property names
+                .replace(/:\s*([^",\[\]{}\n\r]+?)(\s*[,\]}])/g, (match, value, suffix) => {
+                  const trimmed = value.trim()
+                  if (/^(\d+\.?\d*|true|false|null)$/.test(trimmed) || trimmed.startsWith('"')) {
+                    return match
+                  }
+                  return `: "${trimmed.replace(/"/g, '\\"')}"${suffix}`
+                })
+              
+              parsed = JSON.parse(aggressiveClean)
+            } catch (error3) {
+              console.log('All parsing strategies failed, using fallback')
+              throw new Error('Unable to parse JSON after all repair attempts')
+            }
+          }
+        }
+        
+        if (parsed) {
+          // Validate required fields and provide fallbacks
+          analysisData = {
+            businessName: parsed.businessName || extractBusinessName(websiteUrl),
+            description: parsed.description || 'Business analysis completed',
+            valueProposition: parsed.valueProposition || 'Providing valuable services to clients',
+            industry: parsed.industry || 'Business Services',
+            targetMarkets: Array.isArray(parsed.targetMarkets) ? parsed.targetMarkets : [],
+            competitiveAdvantage: parsed.competitiveAdvantage || 'Quality service and customer focus',
+            targetCustomers: Array.isArray(parsed.targetCustomers) ? parsed.targetCustomers : [],
+            targetDecisionMakers: Array.isArray(parsed.targetDecisionMakers) ? parsed.targetDecisionMakers : []
+          }
+        } else {
+          throw new Error('No valid JSON found in response')
         }
       } else {
-        throw new Error('No valid JSON found in response')
+        throw new Error('No JSON structure found in response')
       }
     } catch (parseError) {
       console.error('Failed to parse Gemini response:', parseError)
@@ -209,6 +260,62 @@ async function fetchWebsiteContent(url: string): Promise<string> {
   } catch (error) {
     console.error('Failed to fetch website:', error)
     return 'Unable to fetch website content'
+  }
+}
+
+function repairJSON(jsonString: string): string {
+  try {
+    // First, try to validate if it's already valid JSON
+    try {
+      JSON.parse(jsonString)
+      return jsonString // If it parses successfully, return as-is
+    } catch {
+      // Continue with repairs if it fails
+    }
+
+    // More comprehensive JSON repair
+    let repaired = jsonString
+
+    // Remove trailing commas before closing brackets/braces
+    repaired = repaired.replace(/,(\s*[}\]])/g, '$1')
+    
+    // Fix unquoted property names
+    repaired = repaired.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+    
+    // Remove trailing commas in objects and arrays
+    repaired = repaired.replace(/,(\s*})/g, '$1')
+    repaired = repaired.replace(/,(\s*])/g, '$1')
+    
+    // Fix issues with quotes inside strings (but be careful not to break structure)
+    // Replace smart quotes with regular quotes
+    repaired = repaired.replace(/[""]/g, '"')
+    repaired = repaired.replace(/['']/g, "'")
+    
+    // Fix common escape sequence issues
+    repaired = repaired.replace(/\\'/g, "'")
+    
+    // Remove any control characters that might break JSON
+    repaired = repaired.replace(/[\x00-\x1F\x7F]/g, '')
+    
+    // Try to fix missing commas between object properties
+    repaired = repaired.replace(/"\s*\n\s*"/g, '",\n  "')
+    repaired = repaired.replace(/}\s*\n\s*{/g, '},\n  {')
+    repaired = repaired.replace(/]\s*\n\s*\[/g, '],\n  [')
+    
+    // Fix missing quotes around string values that look like they should be quoted
+    repaired = repaired.replace(/:\s*([^",\[\]{}\n]+)([,\]}])/g, (match, value, suffix) => {
+      const trimmed = value.trim()
+      // Don't quote numbers, booleans, null, or already quoted strings
+      if (/^(\d+\.?\d*|true|false|null)$/.test(trimmed) || trimmed.startsWith('"')) {
+        return match
+      }
+      return `: "${trimmed}"${suffix}`
+    })
+
+    return repaired
+  } catch (error) {
+    console.error('Error repairing JSON:', error)
+    return jsonString
   }
 }
 

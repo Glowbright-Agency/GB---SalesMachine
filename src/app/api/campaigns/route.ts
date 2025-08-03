@@ -67,43 +67,79 @@ export async function POST(request: NextRequest) {
     const { 
       businessId, 
       name, 
+      location,
+      numberOfLeads = 100,
+      service,
+      businessData,
+      salesTargets = [],
+      decisionMakers = [],
+      salesScripts = {},
+      status = 'draft',
       searchParameters,
-      budgetLimit,
-      numberOfLeads = 100
+      budgetLimit
     } = body
 
-    // Validate business ownership
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('id', businessId)
-      .eq('user_id', user.id)
-      .single()
+    console.log('Creating campaign with data:', { name, location, numberOfLeads, service, status })
+
+    // Get user's business if businessId not provided
+    let business
+    if (businessId) {
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('id', businessId)
+        .eq('user_id', user.id)
+        .single()
+      business = businessData
+    } else {
+      // Get user's first business
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      business = businessData
+    }
 
     if (!business) {
-      return NextResponse.json({ error: 'Business not found' }, { status: 404 })
+      return NextResponse.json({ error: 'No business found. Please complete onboarding first.' }, { status: 404 })
+    }
+
+    // Prepare campaign data according to database schema
+    const campaignData = {
+      business_id: business.id,
+      name,
+      search_parameters: {
+        location: location || searchParameters?.location,
+        numberOfLeads,
+        salesTargets,
+        decisionMakers,
+        service,
+        scripts: salesScripts, // Store scripts in search_parameters for now
+        businessData,
+        createdFrom: 'campaign-wizard',
+        timestamp: new Date().toISOString(),
+        ...(searchParameters || {})
+      },
+      budget_limit: budgetLimit || (service === 'scraping' ? numberOfLeads * 4 : null),
+      status
     }
 
     // Create campaign
     const { data: campaign, error } = await supabase
       .from('campaigns')
-      .insert({
-        business_id: businessId,
-        name,
-        search_parameters: {
-          ...searchParameters,
-          numberOfLeads
-        },
-        budget_limit: budgetLimit,
-        status: 'draft'
-      })
+      .insert(campaignData)
       .select()
       .single()
 
     if (error) {
-      console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 })
+      console.error('Database error creating campaign:', error)
+      return NextResponse.json({ error: 'Failed to create campaign: ' + error.message }, { status: 500 })
     }
+
+    console.log('Campaign created successfully:', campaign.id)
 
     return NextResponse.json({ 
       success: true, 
@@ -113,7 +149,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating campaign:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     )
   }

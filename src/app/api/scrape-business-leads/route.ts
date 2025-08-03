@@ -50,24 +50,50 @@ export async function POST(request: NextRequest) {
 
     console.log('Apify input:', apifyInput)
 
-    // Call Apify API
+    // Validate Apify API key
+    if (!process.env.APIFY_API_KEY) {
+      return NextResponse.json({ 
+        error: 'Apify API key not configured' 
+      }, { status: 500 })
+    }
+
+    console.log('Calling Apify API with input:', JSON.stringify(apifyInput, null, 2))
+
+    // Call Apify API with enhanced error handling
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+    
     const apifyResponse = await fetch('https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.APIFY_API_KEY}`
       },
-      body: JSON.stringify(apifyInput)
+      body: JSON.stringify(apifyInput),
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
 
     if (!apifyResponse.ok) {
       console.error('Apify API error:', apifyResponse.status, apifyResponse.statusText)
       const errorText = await apifyResponse.text()
       console.error('Apify error details:', errorText)
       
+      // Provide more specific error messages
+      let errorMessage = 'Failed to scrape leads from Google Maps'
+      if (apifyResponse.status === 401) {
+        errorMessage = 'Invalid Apify API key'
+      } else if (apifyResponse.status === 402) {
+        errorMessage = 'Apify quota exceeded'
+      } else if (apifyResponse.status === 429) {
+        errorMessage = 'Apify rate limit exceeded'
+      }
+      
       return NextResponse.json({ 
-        error: 'Failed to scrape leads from Google Maps',
-        details: `Apify API returned ${apifyResponse.status}: ${apifyResponse.statusText}`
+        error: errorMessage,
+        details: `Apify API returned ${apifyResponse.status}: ${apifyResponse.statusText}`,
+        apify_error: errorText
       }, { status: 500 })
     }
 
@@ -102,7 +128,7 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: user.id,
           type: 'lead_scraped',
-          amount: creditsUsed * 1, // $1 per scraped lead
+          amount: creditsUsed * 0.20, // $0.20 per scraped lead
           credits_used: creditsUsed,
           description: `Scraped ${creditsUsed} business leads from Google Maps`,
           related_id: null
